@@ -1,14 +1,22 @@
 package com.geckolandmarks.apiexample;
 
+import java.io.IOException;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.os.Bundle;
 import android.widget.TextView;
 
+import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
+import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
 import com.google.android.maps.MyLocationOverlay;
 
 public class LandmarkApiActivity extends MapActivity {
-    private LandmarkOverlay mapOverlay;
+    private LandmarkOverlay landmarkOverlay;
 	private MyLocationOverlay myLocationOverlay;
 	private MapView mapView;
 	private TextView statusText;
@@ -21,9 +29,8 @@ public class LandmarkApiActivity extends MapActivity {
         statusText = (TextView) findViewById(R.id.status_text);
         mapView = (MapView) findViewById(R.id.mapview);
         mapView.setBuiltInZoomControls(true);
-		mapOverlay = new LandmarkOverlay(this);
-		mapOverlay.addOverlay(0.0, 0.0, 0);
-		mapView.getOverlays().add(mapOverlay);
+		landmarkOverlay = new LandmarkOverlay(this);
+		mapView.getOverlays().add(landmarkOverlay);
 		myLocationOverlay = new com.google.android.maps.MyLocationOverlay(this, mapView);
 		mapView.getOverlays().add(myLocationOverlay);
 		myLocationOverlay.runOnFirstFix(new Runnable() {
@@ -60,8 +67,51 @@ public class LandmarkApiActivity extends MapActivity {
     }
     
     private void loadLandmarks() {
-        mapView.getController().animateTo(myLocationOverlay.getMyLocation());
+    	// Default zoom before landmarks are loaded
+    	final int DEFAULT_ZOOM = 15;
+    	// Zoom to this many landmarks when loaded
+    	final int ZOOM_LANDMARK_COUNT = 8;
+    	MapController mapController = mapView.getController();
+    	mapController.animateTo(myLocationOverlay.getMyLocation());
+    	mapController.setZoom(DEFAULT_ZOOM);
 		setStatus("Loading landmark data...");
+		GeoPoint location = myLocationOverlay.getMyLocation();
+		try {
+			JSONArray landmarks = LandmarkApiAccess.loadNearestLandmarks(
+					location.getLatitudeE6()/1000000.0, 
+					location.getLongitudeE6()/1000000.0 );
+			if(landmarks.length() != LandmarkApiAccess.COUNT )
+				throw new IOException("Only " + landmarks.length() + 
+						" landmarks loaded, should be " + LandmarkApiAccess.COUNT );
+			
+			// Latitude and longitude span of the nearest landmarks
+			// for zooming
+			int latSpanE6 = 0, lonSpanE6 = 0;
+			for(int i=0; i<landmarks.length(); i++) {
+				JSONObject jl = landmarks.getJSONObject(i);
+				double jlLat = jl.getDouble("lat");
+				double jlLon = jl.getDouble("lon");
+				landmarkOverlay.addLandmark(jlLat,
+						jlLon,
+						jl.getString("name1"),
+						jl.getString("name1") + " description!");
+				if(i<ZOOM_LANDMARK_COUNT) {
+					int jlLatE6 = (int)(jlLat * 1000000);
+					int jlLonE6 = (int)(jlLon * 1000000);
+					latSpanE6 = Math.max( latSpanE6, Math.abs( location.getLatitudeE6() - jlLatE6) ); 
+					lonSpanE6 = Math.max( lonSpanE6, Math.abs( location.getLongitudeE6() - jlLonE6) );
+				}
+			}
+			mapController.zoomToSpan(latSpanE6, lonSpanE6);
+			landmarkOverlay.doPopulate();
+			setStatus("Please select a landmark");
+		} catch (IOException e) {
+			setStatus("Server error: " + e.getLocalizedMessage() );
+			e.printStackTrace();
+		} catch (JSONException e) {
+			setStatus("JSON error: " + e.getLocalizedMessage() );
+			e.printStackTrace();
+		}
 	}
 
 }
