@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+    <!--
+    NOTE: A proper apiKey must be filled in below, see 
+    https://developers.google.com/maps/documentation/android/mapkey
+    
+    Without this, map tiles will not be loaded.
+     -->
+	<com.google.android.maps.MapView
+	    android:id="@+id/mapview"
+	    android:layout_width="fill_parent"
+	    android:layout_height="fill_parent"
+	    android:clickable="true"
+	    android:apiKey="INSERT_API_KEY_HERE"
+	/>
+	<TextView 
+	    android:id="@+id/status_text"
+	    android:layout_centerHorizontal="true"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_margin="5dp"
+	    android:background="#DFFF"
+	    android:textColor="#000"
+	    android:padding="5dp"
+	    android:text="Getting location..."/>
+</RelativeLayout>
