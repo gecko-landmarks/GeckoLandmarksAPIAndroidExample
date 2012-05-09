@@ -1,7 +1,6 @@
 package com.geckolandmarks.apiexample;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 
 import org.apache.http.HttpEntity;

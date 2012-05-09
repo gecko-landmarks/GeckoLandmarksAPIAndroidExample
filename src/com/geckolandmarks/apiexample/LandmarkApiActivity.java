@@ -16,7 +16,6 @@ import com.google.android.maps.MapView;
 import com.google.android.maps.MyLocationOverlay;
 
 public class LandmarkApiActivity extends MapActivity {
-    private LandmarkOverlay landmarkOverlay;
 	private MyLocationOverlay myLocationOverlay;
 	private MapView mapView;
 	private TextView statusText;
@@ -29,8 +28,6 @@ public class LandmarkApiActivity extends MapActivity {
         statusText = (TextView) findViewById(R.id.status_text);
         mapView = (MapView) findViewById(R.id.mapview);
         mapView.setBuiltInZoomControls(true);
-		landmarkOverlay = new LandmarkOverlay(this);
-		mapView.getOverlays().add(landmarkOverlay);
 		myLocationOverlay = new com.google.android.maps.MyLocationOverlay(this, mapView);
 		mapView.getOverlays().add(myLocationOverlay);
 		myLocationOverlay.runOnFirstFix(new Runnable() {
@@ -66,11 +63,36 @@ public class LandmarkApiActivity extends MapActivity {
 		});
     }
     
+    /**
+     * Generates a description text of a JSON landmark object.
+     * 
+     * Does not include fields that are duplicates, for example
+     * "Turku, Turku, Varsinais-Suomi, FI" => "Turku, Varsinais-Suomi, FI"
+     */
+    private String landmarkDescription( JSONObject jsonLandmark ) throws JSONException {
+	    final String[] FIELDS = {"name1", "name2", "name3", "ccode" };
+	    StringBuffer buffer = new StringBuffer();
+	    String previousValue = null;
+	    for(String field:FIELDS) {
+	    	String value = jsonLandmark.getString(field); 
+    		if(value.length()>0) {
+    			if(previousValue == null || !previousValue.equals(value)) {
+	    			if(buffer.length()>0)
+	    				buffer.append("\n");
+	    			buffer.append(value);
+    			}
+   				previousValue = value;
+    		}
+	    }
+		return buffer.toString();    	
+    }
+    
     private void loadLandmarks() {
     	// Default zoom before landmarks are loaded
     	final int DEFAULT_ZOOM = 15;
     	// Zoom to this many landmarks when loaded
     	final int ZOOM_LANDMARK_COUNT = 8;
+		LandmarkOverlay landmarkOverlay = new LandmarkOverlay(this);
     	MapController mapController = mapView.getController();
     	mapController.animateTo(myLocationOverlay.getMyLocation());
     	mapController.setZoom(DEFAULT_ZOOM);
@@ -94,7 +116,7 @@ public class LandmarkApiActivity extends MapActivity {
 				landmarkOverlay.addLandmark(jlLat,
 						jlLon,
 						jl.getString("name1"),
-						jl.getString("name1") + " description!");
+						landmarkDescription(jl) );
 				if(i<ZOOM_LANDMARK_COUNT) {
 					int jlLatE6 = (int)(jlLat * 1000000);
 					int jlLonE6 = (int)(jlLon * 1000000);
@@ -102,8 +124,9 @@ public class LandmarkApiActivity extends MapActivity {
 					lonSpanE6 = Math.max( lonSpanE6, Math.abs( location.getLongitudeE6() - jlLonE6) );
 				}
 			}
-			mapController.zoomToSpan(latSpanE6, lonSpanE6);
 			landmarkOverlay.doPopulate();
+			mapView.getOverlays().add(landmarkOverlay);
+			mapController.zoomToSpan(latSpanE6, lonSpanE6);
 			setStatus("Please select a landmark");
 		} catch (IOException e) {
 			setStatus("Server error: " + e.getLocalizedMessage() );

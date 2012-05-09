@@ -9,9 +9,6 @@ To build and run the example, you must:
 
 1. Have Google APIs installed in Eclipse. The example uses Google API v7 as default target. See http://developer.android.com/sdk/adding-components.html
 2. Register your development certificate with Google to get a Google Maps API key, see https://developers.google.com/maps/documentation/android/mapkey
-3. Insert your Google Maps API key into res/layout/main.xml:
-	...
-	android:apiKey="INSERT_YOUR_API_KEY"
-	...
+3. Insert your Google Maps API key into res/layout/main.xml: `android:apiKey="INSERT_YOUR_API_KEY"`
 
-For proper testing, you should insert your own Landmark API key to `LandmarkApiAccess.Java`. Contact api@geckolandmarks.com to get your own key. The default example key works but is rate-limited.
+For proper testing, you should also insert your own Landmark API key to src/com/geckolandmarks/apiexample/LandmarkApiAccess.Java, `private static final String LANDMARK_API_KEY = "EXAMPLE_KEY_3edaba1953abf86";`. Contact api@geckolandmarks.com to get your own key. The default example key works but is rate-limited.
